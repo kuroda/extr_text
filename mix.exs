@@ -21,6 +21,7 @@ defmodule ExtrText.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
+      {:ex_doc, "~> 0.25.0", only: :dev, runtime: false},
       {:saxy, "~> 1.4"}
     ]
   end
