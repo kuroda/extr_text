@@ -24,3 +24,5 @@ extr_text-*.tar
 
 # Temporary files, for example, from tests.
 /tmp/
+
+/test/files/greeting/
