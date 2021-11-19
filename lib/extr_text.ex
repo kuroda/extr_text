@@ -1,18 +1,6 @@
 defmodule ExtrText do
   @moduledoc """
-  Documentation for `ExtrText`.
+  ExtrText is an Elixir library for extracting text and meta information from `.docx`, `.xlsx`,
+  `.pptx` files.
   """
-
-  @doc """
-  Hello world.
-
-  ## Examples
-
-      iex> ExtrText.hello()
-      :world
-
-  """
-  def hello do
-    :world
-  end
 end
