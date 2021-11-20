@@ -45,25 +45,30 @@ defmodule ExtrText do
         :unknown -> {nil, []}
       end
 
-    if handler do
-      documents =
-        paths
-        |> Enum.map(fn path ->
-          case File.read(path) do
-            {:ok, xml} -> extract_text(handler, xml)
-            {:error, _} -> nil
-          end
-        end)
-        |> Enum.reject(fn doc -> is_nil(doc) end)
+    result =
+      if handler do
+        documents =
+          paths
+          |> Enum.map(fn path ->
+            case File.read(path) do
+              {:ok, xml} -> extract_text(handler, xml)
+              {:error, _} -> nil
+            end
+          end)
+          |> Enum.reject(fn doc -> is_nil(doc) end)
 
-      if attributes && length(documents) > 0 do
-        {:ok, Enum.join([attributes | documents], "\n")}
+        if attributes && length(documents) > 0 do
+          {:ok, Enum.join([attributes | documents], "\n")}
+        else
+          {:error, "Could not parse XML files."}
+        end
       else
-        {:error, "Could not parse XML files."}
+        {:error, "Could not find a target XML file."}
       end
-    else
-      {:error, "Could not find a target XML file."}
-    end
+
+    File.rm_rf!(subdir)
+
+    result
   end
 
   defp extract_attributes(xml) do
