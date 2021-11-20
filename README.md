@@ -1,5 +1,8 @@
 # ExtrText
 
+[![ExtrText version](https://img.shields.io/hexpm/v/extr_text.svg)](https://hex.pm/packages/extr_text)
+[![Hex.pm](https://img.shields.io/hexpm/dt/extr_text.svg)](https://hex.pm/packages/extr_text)
+
 *ExtrText* is an Elixir library for extracting text and meta information from `.docx`, `.xlsx` and `.pptx` files.
 
 ## Usage
