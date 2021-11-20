@@ -41,7 +41,7 @@ defmodule ExtrText do
       case type do
         :docx -> {WordDocumentHandler, [subdir <> "/word/document.xml"]}
         :xslx -> {ExcelSharedStringsHandler, [subdir <> "/xl/sharedStrings.xml"]}
-        :pptx -> {WordDocumentHandler, get_slides(subdir, paths)}
+        :pptx -> {PresentationSlideHandler, get_slides(subdir, paths)}
         :unknown -> {nil, []}
       end
 
