@@ -18,6 +18,20 @@ pptx = File.read!("example.pptx")
 {:ok, text} = ExtrText.extract(pptx)
 ```
 
+## Installation
+
+Add `:extr_text` to your `mix.exs`:
+
+```elixir
+  defp deps do
+    [
+      {:extr_text, "~> 0.1.0"}
+    ]
+end
+```
+
+Then, run `mix deps.get`.
+
 ## Acknowledgments
 
 This project is inspired by [ranguba/chupa-text](https://github.com/ranguba/chupa-text),
