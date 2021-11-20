@@ -15,5 +15,11 @@ defmodule ExtrTextTest do
       {:ok, text} = ExtrText.extract(xlsx)
       assert text == "Excel\nElixir\nNumbers\nPrefectures\nTokyo\nOsaka\nNagoya"
     end
+
+    test "extract text from a .pptx file" do
+      pptx = File.read!(Path.join(@files_dir, "hello.pptx"))
+      {:ok, text} = ExtrText.extract(pptx)
+      assert text == "spreadsheet\nHELLO\nPresentation\nHello, world!\nPage one\nFoo\nBar\nBaz"
+    end
   end
 end

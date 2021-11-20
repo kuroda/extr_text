@@ -26,7 +26,8 @@ defmodule ExtrText do
     type =
       cond do
         Enum.any?(paths, fn path -> path == subdir <> "/word/document.xml" end) -> :docx
-        Enum.any?(paths, fn path -> path == subdir <> "/xl/sharedStrings.xml" end) -> :xsls
+        Enum.any?(paths, fn path -> path == subdir <> "/xl/sharedStrings.xml" end) -> :xslx
+        Enum.any?(paths, fn path -> path == subdir <> "/ppt/presentation.xml" end) -> :pptx
         true -> :unknown
       end
 
@@ -36,22 +37,27 @@ defmodule ExtrText do
         {:error, _} -> nil
       end
 
-    {handler, filename} =
+    {handler, paths} =
       case type do
-        :docs -> {WordDocumentHandler, "word/document.xml"}
-        :xsls -> {ExcelSharedStringsHandler, "xl/sharedStrings.xml"}
-        :unknown -> {nil, nil}
+        :docx -> {WordDocumentHandler, [subdir <> "/word/document.xml"]}
+        :xslx -> {ExcelSharedStringsHandler, [subdir <> "/xl/sharedStrings.xml"]}
+        :pptx -> {WordDocumentHandler, get_slides(subdir, paths)}
+        :unknown -> {nil, []}
       end
 
-    if handler && filename do
-      document =
-        case File.read(Path.join(subdir, filename)) do
-          {:ok, xml} -> extract_text(handler, xml)
-          {:error, _} -> nil
-        end
+    if handler do
+      documents =
+        paths
+        |> Enum.map(fn path ->
+          case File.read(path) do
+            {:ok, xml} -> extract_text(handler, xml)
+            {:error, _} -> nil
+          end
+        end)
+        |> Enum.reject(fn doc -> is_nil(doc) end)
 
-      if attributes && document do
-        {:ok, attributes <> "\n" <> document}
+      if attributes && length(documents) > 0 do
+        {:ok, Enum.join([attributes | documents], "\n")}
       else
         {:error, "Could not parse XML files."}
       end
@@ -73,6 +79,15 @@ defmodule ExtrText do
   defp reverse_and_join(texts) do
     texts
     |> Enum.reverse()
+    |> Enum.map(&String.trim/1)
+    |> Enum.reject(fn text -> text == "" end)
     |> Enum.join("\n")
+  end
+
+  defp get_slides(subdir, paths) do
+    Enum.filter(paths, fn path ->
+      String.starts_with?(path, subdir <> "/ppt/slides/") &&
+        String.ends_with?(path, ".xml")
+    end)
   end
 end
