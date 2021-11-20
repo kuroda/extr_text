@@ -39,9 +39,9 @@ defmodule ExtrText do
 
     {handler, paths} =
       case type do
-        :docx -> {WordDocumentHandler, [subdir <> "/word/document.xml"]}
-        :xslx -> {ExcelSharedStringsHandler, [subdir <> "/xl/sharedStrings.xml"]}
-        :pptx -> {PresentationSlideHandler, get_slides(subdir, paths)}
+        :docx -> {ExtrText.WordDocumentHandler, [subdir <> "/word/document.xml"]}
+        :xslx -> {ExtrText.ExcelSharedStringsHandler, [subdir <> "/xl/sharedStrings.xml"]}
+        :pptx -> {ExtrText.PresentationSlideHandler, get_slides(subdir, paths)}
         :unknown -> {nil, []}
       end
 
@@ -72,7 +72,9 @@ defmodule ExtrText do
   end
 
   defp extract_attributes(xml) do
-    {:ok, %{texts: texts}} = Saxy.parse_string(xml, AttributeHandler, %{name: nil, texts: []})
+    {:ok, %{texts: texts}} =
+      Saxy.parse_string(xml, ExtrText.AttributeHandler, %{name: nil, texts: []})
+
     reverse_and_join(texts)
   end
 

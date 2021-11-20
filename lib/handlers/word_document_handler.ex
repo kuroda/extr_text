@@ -1,4 +1,4 @@
-defmodule WordDocumentHandler do
+defmodule ExtrText.WordDocumentHandler do
   @behaviour Saxy.Handler
 
   def handle_event(:characters, chars, state) do

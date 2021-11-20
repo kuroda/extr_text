@@ -1,4 +1,4 @@
-defmodule ExcelSharedStringsHandler do
+defmodule ExtrText.ExcelSharedStringsHandler do
   @behaviour Saxy.Handler
 
   def handle_event(:characters, chars, state) do

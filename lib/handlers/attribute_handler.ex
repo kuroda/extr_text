@@ -1,4 +1,4 @@
-defmodule AttributeHandler do
+defmodule ExtrText.AttributeHandler do
   @behaviour Saxy.Handler
 
   def handle_event(:start_element, {name, _attributes}, state) do

@@ -1,4 +1,4 @@
-defmodule PresentationSlideHandler do
+defmodule ExtrText.PresentationSlideHandler do
   @behaviour Saxy.Handler
 
   def handle_event(:characters, chars, state) do
