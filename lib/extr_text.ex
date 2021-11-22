@@ -92,7 +92,6 @@ defmodule ExtrText do
       end
 
     File.rm_rf!(subdir)
-
     result
   end
 
@@ -124,10 +123,14 @@ defmodule ExtrText do
   end
 
   defp do_get_metadata(subdir, _paths) do
-    case File.read(Path.join(subdir, "docProps/core.xml")) do
-      {:ok, xml} -> extract_metadata(xml)
-      {:error, _} -> {:error, "Can't read docProps/core.xml."}
-    end
+    result =
+      case File.read(Path.join(subdir, "docProps/core.xml")) do
+        {:ok, xml} -> extract_metadata(xml)
+        {:error, _} -> {:error, "Can't read docProps/core.xml."}
+      end
+
+    File.rm_rf!(subdir)
+    result
   end
 
   defp extract_metadata(xml) do
