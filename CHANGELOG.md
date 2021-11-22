@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.1 (2021-11-22)
+
+* Make private `ExtrText.do_unzip/1`.
+
 ## 0.2.0 (2021-11-22)
 
 * Add `ExtrText.get_texts/1` for retrieving the content of OOXML document as a double nested list of strings.
