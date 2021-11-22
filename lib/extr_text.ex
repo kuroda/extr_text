@@ -5,25 +5,29 @@ defmodule ExtrText do
   """
 
   @doc """
-  Extract title, subject, description and body as a joined string from the specified binary data.
-
-  The given data must be formatted in Office Open XML (OOXML).
-  """
-  @spec extract(binary()) :: {:ok, String.t()} | {:error, String.t()}
-  def extract(data) do
-    case unzip(data) do
-      {:ok, subdir, paths} -> do_extract(subdir, paths)
-      {:error, reason} -> {:error, reason}
-    end
-  end
-
-  @doc """
-  Extract properties (metadata) from the specified OOXML data.
+  Extracts properties (metadata) from the specified OOXML data.
   """
   @spec get_metadata(binary()) :: {:ok, ExtrText.Metadata.t()} | {:error, String.t()}
   def get_metadata(data) do
     case unzip(data) do
       {:ok, subdir, paths} -> do_get_metadata(subdir, paths)
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  @doc """
+  Extracts plain texts from the body of specified OOXML data.
+
+  The return value is a double nested list of strings.
+
+  Each element of outer list represents the sheets of `.xsls` data and the slides of `.pptx` data.
+  For `.docx` data, the outer list has only one element.
+
+  Each element of inner list represents the paragraphs or lines of a spreadsheet.
+  """
+  def get_texts(data) do
+    case unzip(data) do
+      {:ok, subdir, paths} -> do_get_texts(subdir, paths)
       {:error, reason} -> {:error, reason}
     end
   end
@@ -47,72 +51,11 @@ defmodule ExtrText do
     end
   end
 
-  defp do_extract(subdir, paths) do
-    type =
-      cond do
-        Enum.any?(paths, fn path -> path == subdir <> "/word/document.xml" end) -> :docx
-        Enum.any?(paths, fn path -> path == subdir <> "/xl/sharedStrings.xml" end) -> :xslx
-        Enum.any?(paths, fn path -> path == subdir <> "/ppt/presentation.xml" end) -> :pptx
-        true -> :unknown
-      end
-
-    attributes =
-      case File.read(Path.join(subdir, "docProps/core.xml")) do
-        {:ok, xml} -> extract_attributes(xml)
-        {:error, _} -> nil
-      end
-
-    {handler, paths} =
-      case type do
-        :docx -> {ExtrText.WordDocumentHandler, [subdir <> "/word/document.xml"]}
-        :xslx -> {ExtrText.ExcelSharedStringsHandler, [subdir <> "/xl/sharedStrings.xml"]}
-        :pptx -> {ExtrText.PresentationSlideHandler, get_slides(subdir, paths)}
-        :unknown -> {nil, []}
-      end
-
-    result =
-      if handler do
-        documents =
-          paths
-          |> Enum.map(fn path ->
-            case File.read(path) do
-              {:ok, xml} -> extract_text(handler, xml)
-              {:error, _} -> nil
-            end
-          end)
-          |> Enum.reject(fn doc -> is_nil(doc) end)
-
-        if attributes && length(documents) > 0 do
-          {:ok, Enum.join([attributes | documents], "\n")}
-        else
-          {:error, "Could not parse XML files."}
-        end
-      else
-        {:error, "Could not find a target XML file."}
-      end
-
-    File.rm_rf!(subdir)
-    result
-  end
-
-  defp extract_attributes(xml) do
-    {:ok, %{texts: texts}} =
-      Saxy.parse_string(xml, ExtrText.AttributeHandler, %{name: nil, texts: []})
-
-    reverse_and_join(texts)
-  end
-
-  defp extract_text(handler, xml) do
-    {:ok, texts} = Saxy.parse_string(xml, handler, [])
-    reverse_and_join(texts)
-  end
-
-  defp reverse_and_join(texts) do
-    texts
-    |> Enum.reverse()
-    |> Enum.map(&String.trim/1)
-    |> Enum.reject(fn text -> text == "" end)
-    |> Enum.join("\n")
+  defp get_worksheets(subdir, paths) do
+    Enum.filter(paths, fn path ->
+      String.starts_with?(path, subdir <> "/xl/worksheets/") &&
+        String.ends_with?(path, ".xml")
+    end)
   end
 
   defp get_slides(subdir, paths) do
@@ -141,5 +84,81 @@ defmodule ExtrText do
       })
 
     {:ok, metadata}
+  end
+
+  defp do_get_texts(subdir, paths) do
+    type =
+      cond do
+        Enum.any?(paths, fn path -> path == subdir <> "/word/document.xml" end) -> :docx
+        Enum.any?(paths, fn path -> path == subdir <> "/xl/sharedStrings.xml" end) -> :xlsx
+        Enum.any?(paths, fn path -> path == subdir <> "/ppt/presentation.xml" end) -> :pptx
+        true -> :unknown
+      end
+
+    result = do_get_texts(subdir, paths, type)
+    File.rm_rf!(subdir)
+    result
+  end
+
+  defp do_get_texts(_subdir, _paths, :unknown) do
+    {:error, "Could not find a target XML file."}
+  end
+
+  defp do_get_texts(subdir, paths, :xlsx) do
+    xml = File.read!(subdir <> "/xl/sharedStrings.xml")
+
+    {:ok, strings} = Saxy.parse_string(xml, ExtrText.ExcelSharedStringsHandler, [])
+    strings = Enum.reverse(strings)
+
+    worksheets = get_worksheets(subdir, paths)
+
+    text_sets =
+      worksheets
+      |> Enum.map(fn path ->
+        case File.read(path) do
+          {:ok, xml} -> extract_texts(:xslx, xml, strings)
+          {:error, _} -> nil
+        end
+      end)
+      |> Enum.reject(fn doc -> is_nil(doc) end)
+
+    {:ok, text_sets}
+  end
+
+  defp do_get_texts(subdir, paths, type) when type in ~w(docx pptx)a do
+    {handler, paths} =
+      case type do
+        :docx -> {ExtrText.WordDocumentHandler, [subdir <> "/word/document.xml"]}
+        :pptx -> {ExtrText.PresentationSlideHandler, get_slides(subdir, paths)}
+      end
+
+    text_sets =
+      paths
+      |> Enum.map(fn path ->
+        case File.read(path) do
+          {:ok, xml} -> extract_texts(handler, xml)
+          {:error, _} -> nil
+        end
+      end)
+      |> Enum.reject(fn doc -> is_nil(doc) end)
+
+    {:ok, text_sets}
+  end
+
+  defp extract_texts(:xslx, xml, strings) do
+    {:ok, %{texts: texts}} =
+      Saxy.parse_string(xml, ExtrText.ExcelWorksheetHandler, %{
+        texts: [],
+        buffer: [],
+        strings: strings,
+        type: nil
+      })
+
+    Enum.reverse(texts)
+  end
+
+  defp extract_texts(handler, xml) do
+    {:ok, %{texts: texts}} = Saxy.parse_string(xml, handler, %{texts: [], buffer: []})
+    Enum.reverse(texts)
   end
 end
