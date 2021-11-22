@@ -39,7 +39,7 @@ Add `:extr_text` to your `mix.exs`:
     [
       {:extr_text, "~> 0.2.0"}
     ]
-end
+  end
 ```
 
 Then, run `mix deps.get`.
