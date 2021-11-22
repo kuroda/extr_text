@@ -44,7 +44,7 @@ defmodule ExtrText do
     end
   end
 
-  def do_unzip(data, subdir) do
+  defp do_unzip(data, subdir) do
     case :zip.unzip(data, cwd: String.to_charlist(subdir)) do
       {:ok, paths} -> {:ok, subdir, Enum.map(paths, &List.to_string/1)}
       {:error, _reason} -> {:error, "Can't unzip the given data."}
