@@ -11,14 +11,9 @@ defmodule ExtrText do
   """
   @spec extract(binary()) :: {:ok, String.t()} | {:error, String.t()}
   def extract(data) do
-    tmpdir = System.tmp_dir!()
-    now = DateTime.utc_now()
-    {usec, _} = now.microsecond
-    subdir = tmpdir <> "/extr-text-" <> Integer.to_string(usec)
-
-    case File.mkdir_p(subdir) do
-      :ok -> do_extract(data, subdir)
-      {:error, _reason} -> {:error, "Can't create #{subdir}."}
+    case unzip(data) do
+      {:ok, subdir, paths} -> do_extract(subdir, paths)
+      {:error, reason} -> {:error, reason}
     end
   end
 
@@ -27,26 +22,32 @@ defmodule ExtrText do
   """
   @spec get_metadata(binary()) :: {:ok, ExtrText.Metadata.t()} | {:error, String.t()}
   def get_metadata(data) do
+    case unzip(data) do
+      {:ok, subdir, paths} -> do_get_metadata(subdir, paths)
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  defp unzip(data) do
     tmpdir = System.tmp_dir!()
     now = DateTime.utc_now()
     {usec, _} = now.microsecond
     subdir = tmpdir <> "/extr-text-" <> Integer.to_string(usec)
 
     case File.mkdir_p(subdir) do
-      :ok -> do_get_metadata(data, subdir)
+      :ok -> do_unzip(data, subdir)
       {:error, _reason} -> {:error, "Can't create #{subdir}."}
     end
   end
 
-  defp do_extract(data, subdir) do
-    paths =
-      case :zip.unzip(data, cwd: String.to_charlist(subdir)) do
-        {:ok, paths} -> paths
-        {:error, _} -> []
-      end
+  def do_unzip(data, subdir) do
+    case :zip.unzip(data, cwd: String.to_charlist(subdir)) do
+      {:ok, paths} -> {:ok, subdir, Enum.map(paths, &List.to_string/1)}
+      {:error, _reason} -> {:error, "Can't unzip the given data."}
+    end
+  end
 
-    paths = Enum.map(paths, &List.to_string/1)
-
+  defp do_extract(subdir, paths) do
     type =
       cond do
         Enum.any?(paths, fn path -> path == subdir <> "/word/document.xml" end) -> :docx
@@ -122,12 +123,7 @@ defmodule ExtrText do
     end)
   end
 
-  defp do_get_metadata(data, subdir) do
-    case :zip.unzip(data, cwd: String.to_charlist(subdir)) do
-      {:ok, paths} -> paths
-      {:error, _} -> []
-    end
-
+  defp do_get_metadata(subdir, _paths) do
     case File.read(Path.join(subdir, "docProps/core.xml")) do
       {:ok, xml} -> extract_metadata(xml)
       {:error, _} -> {:error, "Can't read docProps/core.xml."}
