@@ -25,6 +25,7 @@ extr_text-*.tar
 # Temporary files, for example, from tests.
 /tmp/
 
-/test/files/greeting/
-/test/files/prefectures/
-/test/files/hello/
+/test/files/*
+!/test/files/*.docx
+!/test/files/*.xlsx
+!/test/files/*.pptx

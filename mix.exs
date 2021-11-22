@@ -25,6 +25,7 @@ defmodule ExtrText.MixProject do
 
   defp deps do
     [
+      {:dialyxir, "~> 1.1.0", only: :dev, runtime: false},
       {:ex_doc, "~> 0.25.0", only: :dev, runtime: false},
       {:saxy, "~> 1.4"}
     ]
