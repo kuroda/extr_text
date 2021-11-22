@@ -6,23 +6,48 @@ defmodule ExtrText do
 
   @doc """
   Extract title, subject, description and body as a joined string from the specified binary data.
+
+  The given data must be formatted in Office Open XML (OOXML).
   """
   @spec extract(binary()) :: {:ok, String.t()} | {:error, String.t()}
   def extract(data) do
+    case unzip(data) do
+      {:ok, subdir, paths} -> do_extract(subdir, paths)
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  @doc """
+  Extract properties (metadata) from the specified OOXML data.
+  """
+  @spec get_metadata(binary()) :: {:ok, ExtrText.Metadata.t()} | {:error, String.t()}
+  def get_metadata(data) do
+    case unzip(data) do
+      {:ok, subdir, paths} -> do_get_metadata(subdir, paths)
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  defp unzip(data) do
     tmpdir = System.tmp_dir!()
     now = DateTime.utc_now()
     {usec, _} = now.microsecond
     subdir = tmpdir <> "/extr-text-" <> Integer.to_string(usec)
 
     case File.mkdir_p(subdir) do
-      :ok -> do_extract(data, subdir)
+      :ok -> do_unzip(data, subdir)
       {:error, _reason} -> {:error, "Can't create #{subdir}."}
     end
   end
 
-  defp do_extract(data, subdir) do
-    {:ok, paths} = :zip.unzip(data, cwd: subdir)
+  def do_unzip(data, subdir) do
+    case :zip.unzip(data, cwd: String.to_charlist(subdir)) do
+      {:ok, paths} -> {:ok, subdir, Enum.map(paths, &List.to_string/1)}
+      {:error, _reason} -> {:error, "Can't unzip the given data."}
+    end
+  end
 
+  defp do_extract(subdir, paths) do
     type =
       cond do
         Enum.any?(paths, fn path -> path == subdir <> "/word/document.xml" end) -> :docx
@@ -67,7 +92,6 @@ defmodule ExtrText do
       end
 
     File.rm_rf!(subdir)
-
     result
   end
 
@@ -96,5 +120,26 @@ defmodule ExtrText do
       String.starts_with?(path, subdir <> "/ppt/slides/") &&
         String.ends_with?(path, ".xml")
     end)
+  end
+
+  defp do_get_metadata(subdir, _paths) do
+    result =
+      case File.read(Path.join(subdir, "docProps/core.xml")) do
+        {:ok, xml} -> extract_metadata(xml)
+        {:error, _} -> {:error, "Can't read docProps/core.xml."}
+      end
+
+    File.rm_rf!(subdir)
+    result
+  end
+
+  defp extract_metadata(xml) do
+    {:ok, %{metadata: metadata}} =
+      Saxy.parse_string(xml, ExtrText.MetadataHandler, %{
+        name: nil,
+        metadata: %ExtrText.Metadata{}
+      })
+
+    {:ok, metadata}
   end
 end
