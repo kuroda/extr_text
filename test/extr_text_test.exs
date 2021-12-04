@@ -60,12 +60,17 @@ defmodule ExtrTextTest do
       assert line4 == ""
     end
 
-    # Note that this function does not extract numbers, dates, etc.
-    test "extract plain texts from the slides of a .xlsx file" do
+    test "extract plain texts from the worksheets of a .xlsx file (1)" do
       xlsx = File.read!(Path.join(@files_dir, "prefectures.xlsx"))
       {:ok, [sheet1, sheet2]} = ExtrText.get_texts(xlsx)
-      assert sheet1 == ["Tokyo", "Osaka", "Aichi"]
-      assert sheet2 == ["Tokyo", "Osaka", "Fukuoka"]
+      assert sheet1 == ["Tokyo 100", "Osaka 200", "Aichi 300"]
+      assert sheet2 == ["Tokyo 100 2021-01-01", "Osaka 200 2021-01-02", "Fukuoka 300 2021-01-03"]
+    end
+
+    test "extract plain texts from the worksheets of a .xlsx file (2)" do
+      xlsx = File.read!(Path.join(@files_dir, "dates.xlsx"))
+      {:ok, [sheet1]} = ExtrText.get_texts(xlsx)
+      assert sheet1 == ["2020-01-01 100", "2020-01-02 200", "2020-01-03 300"]
     end
 
     test "extract plain texts from the slides of a .pptx file" do

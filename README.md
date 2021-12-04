@@ -37,7 +37,7 @@ Add `:extr_text` to your `mix.exs`:
 ```elixir
   defp deps do
     [
-      {:extr_text, "~> 0.2.0"}
+      {:extr_text, "~> 0.3.0"}
     ]
   end
 ```
@@ -46,7 +46,9 @@ Then, run `mix deps.get`.
 
 ## Limitations
 
-* The function `ExtrText.get_texts/1` extracts texts from an Excel file, but not numbers, dates, etc.
+* The function `ExtrText.get_texts/1` extracts numbers and dates without format from an Excel file.
+  For example, even if the date is displayed as `3-Jan-20` on the Excel screen,
+  it will be extracted as `2020-01-03`.
 
 ## Acknowledgments
 

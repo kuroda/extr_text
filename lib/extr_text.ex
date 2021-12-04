@@ -90,7 +90,7 @@ defmodule ExtrText do
     type =
       cond do
         Enum.any?(paths, fn path -> path == subdir <> "/word/document.xml" end) -> :docx
-        Enum.any?(paths, fn path -> path == subdir <> "/xl/sharedStrings.xml" end) -> :xlsx
+        Enum.any?(paths, fn path -> path == subdir <> "/xl/workbook.xml" end) -> :xlsx
         Enum.any?(paths, fn path -> path == subdir <> "/ppt/presentation.xml" end) -> :pptx
         true -> :unknown
       end
@@ -105,10 +105,27 @@ defmodule ExtrText do
   end
 
   defp do_get_texts(subdir, paths, :xlsx) do
-    xml = File.read!(subdir <> "/xl/sharedStrings.xml")
+    strings =
+      if File.exists?(subdir <> "/xl/sharedStrings.xml") do
+        ss_xml = File.read!(subdir <> "/xl/sharedStrings.xml")
 
-    {:ok, strings} = Saxy.parse_string(xml, ExtrText.ExcelSharedStringsHandler, [])
-    strings = Enum.reverse(strings)
+        {:ok, strings} = Saxy.parse_string(ss_xml, ExtrText.ExcelSharedStringsHandler, [])
+        Enum.reverse(strings)
+      else
+        []
+      end
+
+    st_xml = File.read!(subdir <> "/xl/styles.xml")
+
+    {:ok, %{num_formats: num_formats, cell_style_xfs: cell_style_xfs}} =
+      Saxy.parse_string(st_xml, ExtrText.ExcelStylesHandler, %{
+        num_formats: [],
+        cell_style_xfs: [],
+        name: nil
+      })
+
+    num_formats = Enum.reverse(num_formats)
+    cell_style_xfs = Enum.reverse(cell_style_xfs)
 
     worksheets = get_worksheets(subdir, paths)
 
@@ -116,7 +133,7 @@ defmodule ExtrText do
       worksheets
       |> Enum.map(fn path ->
         case File.read(path) do
-          {:ok, xml} -> extract_texts(:xslx, xml, strings)
+          {:ok, xml} -> extract_texts(:xslx, xml, strings, num_formats, cell_style_xfs)
           {:error, _} -> nil
         end
       end)
@@ -145,13 +162,16 @@ defmodule ExtrText do
     {:ok, text_sets}
   end
 
-  defp extract_texts(:xslx, xml, strings) do
+  defp extract_texts(:xslx, xml, strings, num_formats, cell_style_xfs) do
     {:ok, %{texts: texts}} =
       Saxy.parse_string(xml, ExtrText.ExcelWorksheetHandler, %{
         texts: [],
         buffer: [],
         strings: strings,
-        type: nil
+        num_formats: num_formats,
+        cell_style_xfs: cell_style_xfs,
+        type: nil,
+        style: nil
       })
 
     Enum.reverse(texts)
