@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.0 (2021-12-04)
+
+* Extract numbers and dates from Excel sheets.
+
 ## 0.2.1 (2021-11-22)
 
 * Make private `ExtrText.do_unzip/1`.
