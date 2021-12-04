@@ -27,7 +27,8 @@ defmodule ExtrText.MixProject do
     [
       {:dialyxir, "~> 1.1.0", only: :dev, runtime: false},
       {:ex_doc, "~> 0.25.0", only: :dev, runtime: false},
-      {:saxy, "~> 1.4"}
+      {:saxy, "~> 1.4"},
+      {:decimal, "~> 2.0"}
     ]
   end
 end

@@ -70,7 +70,14 @@ defmodule ExtrTextTest do
     test "extract plain texts from the worksheets of a .xlsx file (2)" do
       xlsx = File.read!(Path.join(@files_dir, "dates.xlsx"))
       {:ok, [sheet1]} = ExtrText.get_texts(xlsx)
-      assert sheet1 == ["2020-01-01 100", "2020-01-02 200", "2020-01-03 300"]
+
+      assert sheet1 == [
+               "2020-01-01 100",
+               "2020-01-02 200",
+               "2020-01-03 300",
+               "12:00:00",
+               "2021-01-01 12:00:00"
+             ]
     end
 
     test "extract plain texts from the slides of a .pptx file" do
