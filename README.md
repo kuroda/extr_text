@@ -37,7 +37,7 @@ Add `:extr_text` to your `mix.exs`:
 ```elixir
   defp deps do
     [
-      {:extr_text, "~> 0.3.0"}
+      {:extr_text, "~> 0.3.1"}
     ]
   end
 ```
