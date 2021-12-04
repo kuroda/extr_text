@@ -90,7 +90,7 @@ defmodule ExtrText.ExcelWorksheetHandler do
 
   defp do_format_number(chars, format_id, _state)
        when format_id in 14..36 or format_id in 45..47 or format_id in 50..58 do
-    format_date(chars)
+    format_date_and_time(chars)
   end
 
   defp do_format_number(chars, format_id, state) do
@@ -105,8 +105,8 @@ defmodule ExtrText.ExcelWorksheetHandler do
     if num_format do
       format_code = get_value(num_format, "formatCode")
 
-      if is_date?(format_code) do
-        format_date(chars)
+      if is_date_or_time?(format_code) do
+        format_date_and_time(chars)
       else
         chars
       end
@@ -115,9 +115,9 @@ defmodule ExtrText.ExcelWorksheetHandler do
     end
   end
 
-  @date_format_words ~w(yyyy yy ggge ge mmm mm m dd d)
+  @date_format_words ~w(yyyy yy ggge ge mmm mm m dd d h ss)
 
-  defp is_date?(format_code) do
+  defp is_date_or_time?(format_code) do
     format_string = String.replace(format_code, ~r/\\./u, " ", global: true)
     words = Regex.scan(~r/[a-z]+/, format_string)
     words = List.flatten(words)
@@ -134,9 +134,44 @@ defmodule ExtrText.ExcelWorksheetHandler do
     end
   end
 
-  defp format_date(chars) do
+  defp parse_float(nil), do: nil
+
+  defp parse_float(str) do
+    case Float.parse(str) do
+      {n, ""} -> n
+      _ -> nil
+    end
+  end
+
+  defp format_date_and_time(chars) do
     i = parse_int(chars)
-    date = Date.add(~D[1899-12-30], i)
-    Date.to_string(date)
+
+    if i do
+      date = Date.add(~D[1899-12-30], i)
+      Date.to_string(date)
+    else
+      f = parse_float(chars)
+
+      if f do
+        x = trunc(f)
+        y = Decimal.sub(Decimal.from_float(f), Decimal.new(x))
+        sec = Decimal.to_integer(Decimal.mult(y, 24 * 60 * 60))
+
+        time =
+          ~T[00:00:00]
+          |> Time.add(sec)
+          |> Time.truncate(:second)
+
+        if x == 0 do
+          Time.to_string(time)
+        else
+          date = Date.add(~D[1899-12-30], x)
+          {:ok, dt} = DateTime.new(date, time, "Etc/UTC")
+          String.trim_trailing(DateTime.to_string(dt), "Z")
+        end
+      else
+        chars
+      end
+    end
   end
 end

@@ -4,7 +4,7 @@ defmodule ExtrText.MixProject do
   def project do
     [
       app: :extr_text,
-      version: "0.3.0",
+      version: "0.3.1",
       elixir: "~> 1.12",
       start_permanent: Mix.env() == :prod,
       description: "An Elixir library for extracting text from docs/xlsx/pptx files.",
@@ -27,7 +27,8 @@ defmodule ExtrText.MixProject do
     [
       {:dialyxir, "~> 1.1.0", only: :dev, runtime: false},
       {:ex_doc, "~> 0.25.0", only: :dev, runtime: false},
-      {:saxy, "~> 1.4"}
+      {:saxy, "~> 1.4"},
+      {:decimal, "~> 2.0"}
     ]
   end
 end
