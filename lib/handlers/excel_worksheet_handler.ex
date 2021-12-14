@@ -35,6 +35,11 @@ defmodule ExtrText.ExcelWorksheetHandler do
     {:ok, %{state | type: nil}}
   end
 
+  # Ignore `<v>` element if a function is described in `<c>` element.
+  def handle_event(:end_element, "f", state) do
+    {:ok, %{state | type: nil}}
+  end
+
   def handle_event(:characters, chars, state) do
     string =
       case state.type do

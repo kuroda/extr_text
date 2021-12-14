@@ -80,6 +80,17 @@ defmodule ExtrTextTest do
              ]
     end
 
+    test "extract plain texts from the worksheets of a .xlsx file (3)" do
+      xlsx = File.read!(Path.join(@files_dir, "func_comment_drawing.xlsx"))
+      {:ok, [sheet1]} = ExtrText.get_texts(xlsx)
+
+      assert sheet1 == [
+               "x 0.77",
+               "y -1.2",
+               "x + y SUM(B1:B2)"
+             ]
+    end
+
     test "extract plain texts from the slides of a .pptx file" do
       pptx = File.read!(Path.join(@files_dir, "hello.pptx"))
       {:ok, [slide1, slide2]} = ExtrText.get_texts(pptx)
