@@ -32,6 +32,21 @@ defmodule ExtrText do
     end
   end
 
+  @doc """
+  Extracts comments from the body of specified OOXML data.
+
+  The return value is a list of strings.
+
+  Currently, only Excel files are supported.
+  """
+  @spec get_comments(binary()) :: {:ok, [String.t()]} | {:error, String.t()}
+  def get_comments(data) do
+    case unzip(data) do
+      {:ok, subdir, paths} -> do_get_comments(subdir, paths)
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
   defp unzip(data) do
     tmpdir = System.tmp_dir!()
     now = DateTime.utc_now()
@@ -101,7 +116,7 @@ defmodule ExtrText do
   end
 
   defp do_get_texts(_subdir, _paths, :unknown) do
-    {:error, "Could not find a target XML file."}
+    {:error, "Could not find a target Word/XML/PowerPoint file."}
   end
 
   defp do_get_texts(subdir, paths, :xlsx) do
@@ -133,7 +148,7 @@ defmodule ExtrText do
       worksheets
       |> Enum.map(fn path ->
         case File.read(path) do
-          {:ok, xml} -> extract_texts(:xslx, xml, strings, num_formats, cell_style_xfs)
+          {:ok, xml} -> extract_texts(:xlsx, xml, strings, num_formats, cell_style_xfs)
           {:error, _} -> nil
         end
       end)
@@ -162,7 +177,7 @@ defmodule ExtrText do
     {:ok, text_sets}
   end
 
-  defp extract_texts(:xslx, xml, strings, num_formats, cell_style_xfs) do
+  defp extract_texts(:xlsx, xml, strings, num_formats, cell_style_xfs) do
     {:ok, %{texts: texts}} =
       Saxy.parse_string(xml, ExtrText.ExcelWorksheetHandler, %{
         texts: [],
@@ -180,5 +195,41 @@ defmodule ExtrText do
   defp extract_texts(handler, xml) do
     {:ok, %{texts: texts}} = Saxy.parse_string(xml, handler, %{texts: [], buffer: []})
     Enum.reverse(texts)
+  end
+
+  defp do_get_comments(subdir, paths) do
+    type =
+      cond do
+        Enum.any?(paths, fn path -> path == subdir <> "/word/document.xml" end) -> :docx
+        Enum.any?(paths, fn path -> path == subdir <> "/xl/workbook.xml" end) -> :xlsx
+        Enum.any?(paths, fn path -> path == subdir <> "/ppt/presentation.xml" end) -> :pptx
+        true -> :unknown
+      end
+
+    result = extract_comments(subdir, type)
+    File.rm_rf!(subdir)
+    result
+  end
+
+  defp extract_comments(_subdir, :unknown) do
+    {:error, "Could not find a target Word/XML/PowerPoint file."}
+  end
+
+  defp extract_comments(_subdir, type) when type in ~w(docx pptx)a do
+    {:ok, []}
+  end
+
+  defp extract_comments(subdir, :xlsx) do
+    comments =
+      if File.exists?(subdir <> "/xl/comments1.xml") do
+        c_xml = File.read!(subdir <> "/xl/comments1.xml")
+
+        {:ok, strings} = Saxy.parse_string(c_xml, ExtrText.ExcelCommentsHandler, [])
+        Enum.reverse(strings)
+      else
+        []
+      end
+
+    {:ok, comments}
   end
 end

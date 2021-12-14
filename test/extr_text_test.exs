@@ -98,4 +98,13 @@ defmodule ExtrTextTest do
       assert slide2 == ["Page one", "Foo", "Bar", "Baz"]
     end
   end
+
+  describe "get_comments/1" do
+    test "extract comments from the worksheets of a .xlsx file" do
+      xlsx = File.read!(Path.join(@files_dir, "func_comment_drawing.xlsx"))
+      {:ok, comments} = ExtrText.get_comments(xlsx)
+
+      assert comments == ["Value 1", "Value 2", "Sum"]
+    end
+  end
 end

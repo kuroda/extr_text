@@ -3,6 +3,7 @@
 ## 0.3.2
 
 * Extract functions as is from Excel sheets.
+* Extract comments from Excel sheets.
 
 ## 0.3.1 (2021-12-04)
 
