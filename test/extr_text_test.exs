@@ -107,4 +107,13 @@ defmodule ExtrTextTest do
       assert comments == ["Value 1", "Value 2", "Sum"]
     end
   end
+
+  describe "get_texts_in_drawings/1" do
+    test "extract texts in drawings from the Excel worksheets" do
+      xlsx = File.read!(Path.join(@files_dir, "func_comment_drawing.xlsx"))
+      {:ok, texts} = ExtrText.get_texts_in_drawings(xlsx)
+
+      assert texts == ["Hello, world!", "Good job!"]
+    end
+  end
 end

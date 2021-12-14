@@ -4,6 +4,7 @@
 
 * Extract functions as is from Excel sheets.
 * Extract comments from Excel sheets.
+* Extract plain texts from draiwings embedded in Excel sheets.
 
 ## 0.3.1 (2021-12-04)
 

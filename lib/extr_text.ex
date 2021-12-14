@@ -47,6 +47,21 @@ defmodule ExtrText do
     end
   end
 
+  @doc """
+  Extracts plain texts from draiwings embedded in the body of specified OOXML data.
+
+  The return value is a list of strings.
+
+  Currently, only Excel files are supported.
+  """
+  @spec get_texts_in_drawings(binary()) :: {:ok, [String.t()]} | {:error, String.t()}
+  def get_texts_in_drawings(data) do
+    case unzip(data) do
+      {:ok, subdir, paths} -> do_get_texts_in_drawings(subdir, paths)
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
   defp unzip(data) do
     tmpdir = System.tmp_dir!()
     now = DateTime.utc_now()
@@ -217,6 +232,37 @@ defmodule ExtrText do
       end
 
     {:ok, comments}
+  end
+
+  defp do_get_texts_in_drawings(subdir, paths) do
+    type = get_type(subdir, paths)
+    result = extract_texts_in_drawings(subdir, type)
+    File.rm_rf!(subdir)
+    result
+  end
+
+  defp extract_texts_in_drawings(_subdir, :unknown) do
+    {:error, "Could not find a target Word/XML/PowerPoint file."}
+  end
+
+  defp extract_texts_in_drawings(_subdir, type) when type in ~w(docx pptx)a do
+    {:ok, []}
+  end
+
+  defp extract_texts_in_drawings(subdir, :xlsx) do
+    texts =
+      if File.exists?(subdir <> "/xl/drawings/drawing1.xml") do
+        c_xml = File.read!(subdir <> "/xl/drawings/drawing1.xml")
+
+        {:ok, %{texts: texts}} =
+          Saxy.parse_string(c_xml, ExtrText.ExcelDrawingsHandler, %{name: nil, texts: []})
+
+        Enum.reverse(texts)
+      else
+        []
+      end
+
+    {:ok, texts}
   end
 
   defp get_type(subdir, paths) do
