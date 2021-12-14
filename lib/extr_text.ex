@@ -102,14 +102,7 @@ defmodule ExtrText do
   end
 
   defp do_get_texts(subdir, paths) do
-    type =
-      cond do
-        Enum.any?(paths, fn path -> path == subdir <> "/word/document.xml" end) -> :docx
-        Enum.any?(paths, fn path -> path == subdir <> "/xl/workbook.xml" end) -> :xlsx
-        Enum.any?(paths, fn path -> path == subdir <> "/ppt/presentation.xml" end) -> :pptx
-        true -> :unknown
-      end
-
+    type = get_type(subdir, paths)
     result = do_get_texts(subdir, paths, type)
     File.rm_rf!(subdir)
     result
@@ -198,14 +191,7 @@ defmodule ExtrText do
   end
 
   defp do_get_comments(subdir, paths) do
-    type =
-      cond do
-        Enum.any?(paths, fn path -> path == subdir <> "/word/document.xml" end) -> :docx
-        Enum.any?(paths, fn path -> path == subdir <> "/xl/workbook.xml" end) -> :xlsx
-        Enum.any?(paths, fn path -> path == subdir <> "/ppt/presentation.xml" end) -> :pptx
-        true -> :unknown
-      end
-
+    type = get_type(subdir, paths)
     result = extract_comments(subdir, type)
     File.rm_rf!(subdir)
     result
@@ -231,5 +217,14 @@ defmodule ExtrText do
       end
 
     {:ok, comments}
+  end
+
+  defp get_type(subdir, paths) do
+    cond do
+      Enum.any?(paths, fn path -> path == subdir <> "/word/document.xml" end) -> :docx
+      Enum.any?(paths, fn path -> path == subdir <> "/xl/workbook.xml" end) -> :xlsx
+      Enum.any?(paths, fn path -> path == subdir <> "/ppt/presentation.xml" end) -> :pptx
+      true -> :unknown
+    end
   end
 end
