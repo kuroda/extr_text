@@ -61,4 +61,4 @@ a Ruby gem package.
 
 ## License
 
-[MIT licens](./MIT_LICENSE.txt)
+[MIT license](./MIT_LICENSE.txt)
