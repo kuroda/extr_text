@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.2 (2025-05-30)
+
+* Run `mix deps.update --all`
+* Run `mix test` againsta Elixir 1.18
+
 ## 0.3.1 (2021-12-04)
 
 * Extract datetimes and times from Excel sheets.
